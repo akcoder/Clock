@@ -1,0 +1,12 @@
+{
+    "editor.minimap.enabled": false,
+    "files.associations": {
+        "limits": "cpp",
+        "cstdint": "cpp",
+        "array": "cpp",
+        "deque": "cpp",
+        "unordered_map": "cpp",
+        "vector": "cpp",
+        "initializer_list": "cpp"
+    }
+}

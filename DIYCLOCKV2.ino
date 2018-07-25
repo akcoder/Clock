@@ -13,7 +13,7 @@ static char ssid[] = "Morphis (N)";
 static char pass[] = "MorphisFamily";
 
 int hours = 0;
-int mins = 0;
+int mins = -1;
 
 #define TZ              -8       // (utc+) TZ in hours
 #define DST_MN          60       // use 60mn for summer time in some countries
@@ -51,13 +51,13 @@ void setup() {
   testDisplay();
 
   //Indicate which step we are on...
-  drawDigit(MINUTE2, 255, 0, 0, 1);
+  drawDigit(MINUTE2, 255, 0, 0, 1, true);
   setupWiFi();
 
-  drawDigit(MINUTE2, 255, 0, 0, 2);
+  drawDigit(MINUTE2, 255, 0, 0, 2, true);
   configTime(TZ_SEC, DST_SEC, "pool.ntp.org");
 
-  drawDigit(MINUTE2, 255, 0, 0, 3);
+  drawDigit(MINUTE2, 255, 0, 0, 3, true);
   settimeofday_cb(time_is_set);
   pinMode(2, OUTPUT);
 }
@@ -93,7 +93,6 @@ void loop() {
       hours = 12;  
     }
 
-    
     Serial.printf("tm %02d:%02d:%02d\n", tm->tm_hour, tm->tm_min, tm->tm_sec);
     Serial.printf("++ %d%d:%d%d:%d%d\n",
       hours / 10, hours - ((hours / 10) * 10),
@@ -111,7 +110,7 @@ void loop() {
     pixels.setPixelColor(DOT1, pixels.Color(255, 0, 0));
     pixels.setPixelColor(DOT2, pixels.Color(255, 0, 0));
     drawDigit(MINUTE1, 255, 0, 0, mins / 10);
-    drawDigit(MINUTE2, 255, 0, 0, mins - ((mins / 10) * 10));
+    drawDigit(MINUTE2, 255, 0, 0, mins - ((mins / 10) * 10), true);
   }
 
   // simple drifting loop
@@ -130,6 +129,10 @@ void loop() {
 }
 
 void drawDigit(int offset, int r, int g, int b, int n) {
+  drawDigit(offset, r, g, b, n, false);
+}
+
+void drawDigit(int offset, int r, int g, int b, int n, bool update) {
   int8 digit = digits[n];
 
   uint32_t on = pixels.Color(r, g, b);
@@ -142,7 +145,9 @@ void drawDigit(int offset, int r, int g, int b, int n) {
     }
   }
 
-  pixels.show();
+  if (update) {
+    pixels.show();
+  }
 }
 
 void clearDisplay() {
@@ -151,7 +156,7 @@ void clearDisplay() {
   pixels.setPixelColor(DOT1, 0);
   pixels.setPixelColor(DOT2, 0);
   drawDigit(MINUTE1, 0, 0, 0, 0);
-  drawDigit(MINUTE2, 0, 0, 0, 0);
+  drawDigit(MINUTE2, 0, 0, 0, 0, true);
 }
 
 void testDisplay() {
@@ -165,7 +170,7 @@ void testDisplay() {
     pixels.setPixelColor(DOT2, dotColor);
 
     drawDigit(MINUTE1, 255, 0, 0, i);
-    drawDigit(MINUTE2, 255, 0, 0, i);
+    drawDigit(MINUTE2, 255, 0, 0, i, true);
     delay(500);
   }
 

@@ -12,6 +12,7 @@
 #define DOT2 (DOT1 + 1)
 #define MINUTE1 (DOT2 + 1)
 #define MINUTE2 MINUTE1 + DIGIT_SIZE
+#define NUMPIXELS MINUTE2 + DIGIT_SIZE
 
 // Bit mapping
 const uint8_t ZERO  = 0b01111110;
@@ -25,5 +26,5 @@ const uint8_t SEVEN = 0b01000110;
 const uint8_t EIGHT = 0b01111111;
 const uint8_t NINE  = 0b01101111;
 
-const uint8_t digits[] = { ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE};
+const uint8_t digits[] = { ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE };
 #endif //DIGITS_H

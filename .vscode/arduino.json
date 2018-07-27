@@ -1,5 +1,5 @@
 {
-    "port": "/dev/ttyUSB2",
+    "port": "/dev/ttyUSB1",
     "board": "esp8266:esp8266:generic",
     "sketch": "DIYCLOCKV2.ino",
     "output": "/tmp/arduinoOutput/DIYCLOCKV2",

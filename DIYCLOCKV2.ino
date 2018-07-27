@@ -1,7 +1,11 @@
 #include <Adafruit_NeoPixel.h>
 #include <ESP8266WiFi.h>
 #include "digits.h"
+#include "ClockDisplay.h"
 
+
+#include <stdio.h>
+#include <string.h>
 #include <time.h>                       // time() ctime()
 #include <sys/time.h>                   // struct timeval
 #include <coredecls.h>                  // settimeofday_cb()
@@ -23,11 +27,11 @@ int mins = -1;
 #define DST_SEC         ((DST_MN)*60)
 
 #define LED_PIN 5 /* d1 on the node mcu board */
-#define NUMPIXELS MINUTE2 + DIGIT_SIZE
 
 unsigned int localPort = 2390;
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
+ClockDisplay display = ClockDisplay(pixels);
 
 timeval tv;
 timespec tp;
@@ -44,20 +48,21 @@ void time_is_set(void) {
 
 void setup() {
   pixels.begin();
-  clearDisplay();
+  display.clear();
 
   Serial.begin(115200);
   Serial.println();
-  testDisplay();
+  display.test();
 
   //Indicate which step we are on...
-  drawDigit(MINUTE2, 255, 0, 0, 1, true);
+  display.drawDigit(MINUTE2, 255, 0, 0, 1, true);
   setupWiFi();
+  showIpOnDisplay();
 
-  drawDigit(MINUTE2, 255, 0, 0, 2, true);
+  display.drawDigit(MINUTE2, 255, 0, 0, 2, true);
   configTime(TZ_SEC, DST_SEC, "pool.ntp.org");
 
-  drawDigit(MINUTE2, 255, 0, 0, 3, true);
+  display.drawDigit(MINUTE2, 255, 0, 0, 3, true);
   settimeofday_cb(time_is_set);
   pinMode(2, OUTPUT);
 }
@@ -101,16 +106,15 @@ void loop() {
 
     //Don't display the leading zero for hours
     if (hours / 10 == 0) {
-      drawDigit(HOUR1, 0, 0, 0, 0);
+      display.turnOffDigit(HOUR1, false);
     } else {
-      drawDigit(HOUR1, 255, 0, 0, hours / 10);
+      display.drawDigit(HOUR1, 255, 0, 0, hours / 10);
     }
 
-    drawDigit(HOUR2, 255, 0, 0, hours - ((hours / 10) * 10));
-    pixels.setPixelColor(DOT1, pixels.Color(255, 0, 0));
-    pixels.setPixelColor(DOT2, pixels.Color(255, 0, 0));
-    drawDigit(MINUTE1, 255, 0, 0, mins / 10);
-    drawDigit(MINUTE2, 255, 0, 0, mins - ((mins / 10) * 10), true);
+    display.drawDigit(HOUR2, 255, 0, 0, hours - ((hours / 10) * 10));
+    display.drawDots(255, 0, 0);
+    display.drawDigit(MINUTE1, 255, 0, 0, mins / 10);
+    display.drawDigit(MINUTE2, 255, 0, 0, mins - ((mins / 10) * 10), true);
   }
 
   // simple drifting loop
@@ -126,55 +130,6 @@ void loop() {
   //     delay(50);
   //   }
   // }
-}
-
-void drawDigit(int offset, int r, int g, int b, int n) {
-  drawDigit(offset, r, g, b, n, false);
-}
-
-void drawDigit(int offset, int r, int g, int b, int n, bool update) {
-  int8 digit = digits[n];
-
-  uint32_t on = pixels.Color(r, g, b);
-  uint32_t off = pixels.Color(0, 0, 0);
-
-  for (int i = 0; i < 8; ++i) { // 7 bits
-    for (int p = 0; p < SEGMENT_SIZE; ++p) {
-      bool isSet = (1 << i) & digit;
-      pixels.setPixelColor((i * SEGMENT_SIZE) + p + offset, isSet ? on : off);
-    }
-  }
-
-  if (update) {
-    pixels.show();
-  }
-}
-
-void clearDisplay() {
-  drawDigit(HOUR1, 0, 0, 0, 0);
-  drawDigit(HOUR2, 0, 0, 0, 0);
-  pixels.setPixelColor(DOT1, 0);
-  pixels.setPixelColor(DOT2, 0);
-  drawDigit(MINUTE1, 0, 0, 0, 0);
-  drawDigit(MINUTE2, 0, 0, 0, 0, true);
-}
-
-void testDisplay() {
-  Serial.println(F("Running self test"));
-  for (int i = 0; i < 10; ++i) {
-    drawDigit(HOUR1, 255, 0, 0, i);
-    drawDigit(HOUR2, 255, 0, 0, i);
-
-    uint32_t dotColor = i % 2 ? pixels.Color(0, 0, 0) : pixels.Color(255, 0, 0);
-    pixels.setPixelColor(DOT1, dotColor);
-    pixels.setPixelColor(DOT2, dotColor);
-
-    drawDigit(MINUTE1, 255, 0, 0, i);
-    drawDigit(MINUTE2, 255, 0, 0, i, true);
-    delay(500);
-  }
-
-  clearDisplay();
 }
 
 void setupWiFi() {
@@ -203,4 +158,23 @@ void printTm(const char* what, const tm* tm) {
   PTM(isdst); PTM(yday); PTM(wday);
   PTM(year);  PTM(mon);  PTM(mday);
   PTM(hour);  PTM(min);  PTM(sec);
+}
+
+void showIpOnDisplay() {
+  char *p = strtok(WiFi.localIP().toString().begin(), ".");
+  char *array[4];
+  int i = 0;
+
+  while (p != NULL) {
+    array[i++] = p;
+    p = strtok(NULL, ".");
+  }
+
+  for (i = 0; i < 4; ++i) {
+    display.drawNumber(0, 0, 255, atoi(array[i]));
+    delay(2000);
+  }
+
+  Serial.println();
+  Serial.println();
 }

@@ -1,8 +1,10 @@
 #include <Adafruit_NeoPixel.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
 #include "digits.h"
 #include "ClockDisplay.h"
-
+#include "ClockWebServer.h"
+#include "Parameters.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -28,10 +30,10 @@ int mins = -1;
 
 #define LED_PIN 5 /* d1 on the node mcu board */
 
-unsigned int localPort = 2390;
-
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 ClockDisplay display = ClockDisplay(pixels);
+Parameters params = Parameters();
+ClockWebServer webServer = ClockWebServer(80, &params);
 
 timeval tv;
 timespec tp;
@@ -47,23 +49,30 @@ void time_is_set(void) {
 }
 
 void setup() {
-  pixels.begin();
-  display.clear();
-
   Serial.begin(115200);
   Serial.println();
+  params.load();
+
+  Serial.println("Testing display");
+  display.begin();
+  display.clear();
+
   display.test();
 
-  //Indicate which step we are on...
-  display.drawDigit(MINUTE2, 255, 0, 0, 1, true);
+  // Indicate which step we are on...
+  display.drawDigit(MINUTE2, 0, 0, 255, 1, true);
   setupWiFi();
   showIpOnDisplay();
 
-  display.drawDigit(MINUTE2, 255, 0, 0, 2, true);
+  display.drawDigit(MINUTE2, 0, 0, 255, 2, true);
   configTime(TZ_SEC, DST_SEC, "pool.ntp.org");
 
-  display.drawDigit(MINUTE2, 255, 0, 0, 3, true);
+  display.drawDigit(MINUTE2, 0, 0, 255, 3, true);
   settimeofday_cb(time_is_set);
+
+  display.drawDigit(MINUTE2, 0, 0, 255, 4, true);
+  webServer.start();
+
   pinMode(2, OUTPUT);
 }
 
@@ -77,12 +86,12 @@ void loop() {
   if (lastv != tv.tv_sec) {
     digitalWrite(2, tv.tv_sec % 2); // Heartbeat the onboard led
     lastv = tv.tv_sec;
-    Serial.println();
-    printTm("localtime", localtime(&now));
-    Serial.println();
-    printTm("gmtime   ", gmtime(&now));
-    Serial.println();
-    Serial.println();
+    // Serial.println();
+    // printTm("localtime", localtime(&now));
+    // Serial.println();
+    // printTm("gmtime   ", gmtime(&now));
+    // Serial.println();
+    // Serial.println();
 
     tm* tm = localtime(&now);
     hours = tm->tm_hour;
@@ -98,34 +107,35 @@ void loop() {
       hours = 12;  
     }
 
-    Serial.printf("tm %02d:%02d:%02d\n", tm->tm_hour, tm->tm_min, tm->tm_sec);
-    Serial.printf("++ %d%d:%d%d:%d%d\n",
-      hours / 10, hours - ((hours / 10) * 10),
-      mins / 10, mins - ((mins / 10) * 10),
-      tm->tm_sec / 10, tm->tm_sec - ((tm->tm_sec / 10) * 10));
+    // Serial.printf("tm %02d:%02d:%02d\n", tm->tm_hour, tm->tm_min, tm->tm_sec);
+    // Serial.printf("++ %d%d:%d%d:%d%d\n",
+    //   hours / 10, hours - ((hours / 10) * 10),
+    //   mins / 10, mins - ((mins / 10) * 10),
+    //   tm->tm_sec / 10, tm->tm_sec - ((tm->tm_sec / 10) * 10));
 
     //Don't display the leading zero for hours
     if (hours / 10 == 0) {
       display.turnOffDigit(HOUR1, false);
     } else {
-      display.drawDigit(HOUR1, 255, 0, 0, hours / 10);
+      display.drawDigit(HOUR1, params.red(), params.green(), params.blue(), hours / 10);
     }
 
-    display.drawDigit(HOUR2, 255, 0, 0, hours - ((hours / 10) * 10));
-    display.drawDots(255, 0, 0);
-    display.drawDigit(MINUTE1, 255, 0, 0, mins / 10);
-    display.drawDigit(MINUTE2, 255, 0, 0, mins - ((mins / 10) * 10), true);
+    display.drawDigit(HOUR2, params.red(), params.green(), params.blue(), hours - ((hours / 10) * 10));
+    display.drawDots(params.red(), params.green(), params.blue());
+    display.drawDigit(MINUTE1, params.red(), params.green(), params.blue(), mins / 10);
+    display.drawDigit(MINUTE2, params.red(), params.green(), params.blue(), mins - ((mins / 10) * 10), true);
   }
+
 
   // simple drifting loop
   delay(100);
 
   // while (true) {
   //   for (int i = 0; i < 9999; ++i) {
-  //     drawDigit(HOUR1, 255, 0, 0, 1000 % i );
-  //     drawDigit(HOUR2, 255, 0, 0, 100 % i);
-  //     drawDigit(MINUTE1, 255, 0, 0, 10 % i);
-  //     drawDigit(MINUTE2, 255, 0, 0, i % 1 );
+  //     drawDigit(HOUR1, params.red(), params.green(), params.blue(), 1000 % i );
+  //     drawDigit(HOUR2, params.red(), params.green(), params.blue(), 100 % i);
+  //     drawDigit(MINUTE1, params.red(), params.green(), params.blue(), 10 % i);
+  //     drawDigit(MINUTE2, params.red(), params.green(), params.blue(), i % 1 );
       
   //     delay(50);
   //   }
@@ -145,8 +155,12 @@ void setupWiFi() {
   Serial.println("");
 
   Serial.println(F("WiFi connected"));
-  Serial.print(F("IP address: "));
-  Serial.println(WiFi.localIP());
+  Serial.printf("IP address: %s\n", WiFi.localIP().toString().c_str());
+
+  if (!MDNS.begin("web-clock")) {             // Start the mDNS responder for web-clock.local
+    Serial.println(F("Error setting up MDNS responder!"));
+  }
+  Serial.println(F("mDNS responder started"));
 }
 
 #define PTM(w) \
@@ -161,17 +175,9 @@ void printTm(const char* what, const tm* tm) {
 }
 
 void showIpOnDisplay() {
-  char *p = strtok(WiFi.localIP().toString().begin(), ".");
-  char *array[4];
-  int i = 0;
-
-  while (p != NULL) {
-    array[i++] = p;
-    p = strtok(NULL, ".");
-  }
-
-  for (i = 0; i < 4; ++i) {
-    display.drawNumber(0, 0, 255, atoi(array[i]));
+  IPAddress ip = WiFi.localIP();
+  for (int8_t i = 0; i < 4; ++i) {
+    display.drawNumber(0, 0, 255, ip[i]);
     delay(2000);
   }
 

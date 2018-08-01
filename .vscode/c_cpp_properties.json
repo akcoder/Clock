@@ -3,6 +3,8 @@
         {
             "name": "Linux",
             "includePath": [
+                "/home/dan/Arduino/libraries/ESPAsyncTCP/src",
+                "/home/dan/Arduino/libraries/ESPAsyncWebServer/src",
                 "/home/dan/.arduino15/packages/esp8266/tools/**",
                 "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.1",
                 "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/cores/esp8266",
@@ -10,16 +12,21 @@
                 "/home/dan/Arduino/libraries/Adafruit_ESP8266",
                 "/home/dan/Arduino/libraries/Adafruit_NeoPixel",
                 "/opt/arduino-1.8.5/libraries/WiFi/src",
+                "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/libraries/EEPROM",
                 "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/cores/esp8266",
                 "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/tools/sdk/include",
                 "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/variants/nodemcu",
                 "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/tools/sdk/libc/xtensa-lx106-elf/include",
                 "/home/dan/.arduino15/packages/esp8266/tools/xtensa-lx106-elf-gcc/1.20.0-26-gb404fb9-2/lib/gcc/xtensa-lx106-elf/4.8.2/include",
+                "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/libraries/ESP8266WebServer/src",
                 "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/libraries/ESP8266WiFi/src"
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
+                    "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/tools/sdk/lwip/include/lwip",
+                    "/home/dan/Arduino/libraries/ESPAsyncTCP/src",
+                    "/home/dan/Arduino/libraries/ESPAsyncWebServer/src",
                     "/home/dan/Arduino/libraries/WS2812FX/src",
                     "/home/dan/Arduino/libraries/Adafruit_ESP8266",
                     "/home/dan/Arduino/libraries/Adafruit_NeoPixel",
@@ -28,6 +35,7 @@
                     "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/cores/esp8266",
                     "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/tools/sdk",
                     "/home/dan/.arduino15/packages/esp8266/tools/xtensa-lx106-elf-gcc/1.20.0-26-gb404fb9-2/lib/gcc/xtensa-lx106-elf/4.8.2/include",
+                    "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/libraries/ESP8266WebServer/src",
                     "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.1/libraries/ESP8266WiFi/src"
                 ]
             },

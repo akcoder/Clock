@@ -77,12 +77,12 @@ void ClockDisplay::drawNumber(int r, int g, int b, int number) {
     turnOffDigit(HOUR1, false);
 
   drawDigit(HOUR2, r, g, b, hundreds);
-
   drawDigit(MINUTE1, r, g, b, tens);
-
   drawDigit(MINUTE2, r, g, b, ones, true);
+}
 
-  Serial.printf("number: %d, th: %d, hun: %d, ten: %d, one: %d\n", number, thousands, hundreds, tens, ones);
+void ClockDisplay::begin() {
+    _pixels.begin();
 }
 
 void ClockDisplay::clear() {

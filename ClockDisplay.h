@@ -14,6 +14,7 @@ class ClockDisplay {
         void drawDots(int r, int g, int b);
         void drawDots(int r, int g, int b, bool update);
         void clear();
+        void begin();
         void test();
     private:
         int nthDigit(int place, int number);

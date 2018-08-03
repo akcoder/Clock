@@ -62,6 +62,7 @@ void setup() {
   // Indicate which step we are on...
   display.drawDigit(MINUTE2, 0, 0, 255, 1, true);
   setupWiFi();
+  webServer.start();
   showIpOnDisplay();
 
   display.drawDigit(MINUTE2, 0, 0, 255, 2, true);
@@ -70,9 +71,6 @@ void setup() {
   display.drawDigit(MINUTE2, 0, 0, 255, 3, true);
   settimeofday_cb(time_is_set);
 
-  display.drawDigit(MINUTE2, 0, 0, 255, 4, true);
-  webServer.start();
-
   pinMode(2, OUTPUT);
 }
 
@@ -80,11 +78,13 @@ void loop() {
   gettimeofday(&tv, nullptr);
   clock_gettime(0, &tp);
   now = time(nullptr);
+  bool even = false;
 
   // localtime / gmtime every second change
   static time_t lastv = 0;
-  if (lastv != tv.tv_sec) {
-    digitalWrite(2, tv.tv_sec % 2); // Heartbeat the onboard led
+  if (cbtime_set && lastv != tv.tv_sec) {
+    even = tv.tv_sec % 2;
+    digitalWrite(2, even); // Heartbeat the onboard led
     lastv = tv.tv_sec;
     // Serial.println();
     // printTm("localtime", localtime(&now));
@@ -121,7 +121,7 @@ void loop() {
     }
 
     display.drawDigit(HOUR2, params.red(), params.green(), params.blue(), hours - ((hours / 10) * 10));
-    display.drawDots(params.red(), params.green(), params.blue());
+    display.drawDots(even ? params.red() : 0, even ? params.green() : 0, even ? params.blue() : 0);
     display.drawDigit(MINUTE1, params.red(), params.green(), params.blue(), mins / 10);
     display.drawDigit(MINUTE2, params.red(), params.green(), params.blue(), mins - ((mins / 10) * 10), true);
   }

@@ -15,10 +15,10 @@ class ClockWebServer {
     private:
         Parameters *_params;
         AsyncWebServer *_server;
+        void index(AsyncWebServerRequest * request);
         void info(AsyncWebServerRequest * request);
         void showParams(AsyncWebServerRequest * request);
-        void updateParams(AsyncWebServerRequest * request);
-        void index(AsyncWebServerRequest * request);
+        void storeParams(AsyncWebServerRequest * request);
         void notFound(AsyncWebServerRequest * request);
         void stylesheet(AsyncWebServerRequest * request);
 };

@@ -9,10 +9,11 @@ ClockWebServer::ClockWebServer(uint16_t port, Parameters *params) {
 }
 
 void ClockWebServer::start() {
+  Serial.println("ClockWebServer::start");
   _server->on("/", HTTP_GET, std::bind(&ClockWebServer::index, this, std::placeholders::_1));
   _server->on("/info", HTTP_GET, std::bind(&ClockWebServer::info, this, std::placeholders::_1));
   _server->on("/params", HTTP_GET, std::bind(&ClockWebServer::showParams, this, std::placeholders::_1));
-  _server->on("/params", HTTP_POST, std::bind(&ClockWebServer::updateParams, this, std::placeholders::_1));
+  _server->on("/params", HTTP_POST, std::bind(&ClockWebServer::storeParams, this, std::placeholders::_1));
   _server->on("/style.css", HTTP_GET, std::bind(&ClockWebServer::stylesheet, this, std::placeholders::_1));
   _server->onNotFound(std::bind(&ClockWebServer::notFound, this, std::placeholders::_1));
 
@@ -20,6 +21,7 @@ void ClockWebServer::start() {
 }
 
 void ClockWebServer::info(AsyncWebServerRequest * request) {
+  Serial.println("ClockWebServer::info");
   char result[1024];
 
   snprintf(result, sizeof(result),
@@ -42,6 +44,7 @@ void ClockWebServer::info(AsyncWebServerRequest * request) {
 }
 
 void ClockWebServer::notFound(AsyncWebServerRequest * request) {
+  Serial.printf("ClockWebServer::notFound %s\n", request->url().c_str());
   String message = "File Not Found\n\n";
   message += "URI: ";
   message += request->url();
@@ -59,8 +62,8 @@ void ClockWebServer::notFound(AsyncWebServerRequest * request) {
 }
 
 void ClockWebServer::showParams(AsyncWebServerRequest *request) {
-  char result[300];
-  char buf[7];
+  Serial.println("ClockWebServer::showParams");
+  char result[400];
   
   snprintf(result, sizeof(result),
   "<html><head>\
@@ -69,7 +72,7 @@ void ClockWebServer::showParams(AsyncWebServerRequest *request) {
   <h1>Clock colors</h1>\
   <form method=\"POST\" action=\"params\">\
   <p><input type=\"color\" name=\"color\" value=\"#%02X%02X%02X\" /></p>\
-  <input type=\"submit\" value=\"Update\">\
+  <input type=\"submit\" value=\"Update\">\ <input type=\"submit\" name=\"store\" value=\"Store &amp; Update\">\
   </form>\
   <a href=\"/\">Home</a>\
   </body></html>", _params->red(), _params->green(), _params->blue());
@@ -77,7 +80,8 @@ void ClockWebServer::showParams(AsyncWebServerRequest *request) {
   request->send(200, "text/html", result);
 }
 
-void ClockWebServer::updateParams(AsyncWebServerRequest *request) {
+void ClockWebServer::storeParams(AsyncWebServerRequest *request) {
+  Serial.println("ClockWebServer::storeParams");
   if (!request->hasArg("color")) {
     request->send(400);
     return;
@@ -99,11 +103,16 @@ void ClockWebServer::updateParams(AsyncWebServerRequest *request) {
   _params->green(result >> 8);
   _params->red(result >> 16);
 
-  _params->write();
+  if (request->hasArg("store")) {
+    _params->write();
+  }
+
   request->redirect("/params");
+  Serial.println("Redirected");
 }
 
 void ClockWebServer::index(AsyncWebServerRequest * request) {
+  Serial.println("ClockWebServer::index");
   char temp[400];
   int up_sec = millis() / 1000;
   int up_min = up_sec / 60;
@@ -146,6 +155,7 @@ void ClockWebServer::index(AsyncWebServerRequest * request) {
 }
 
 void ClockWebServer::stylesheet(AsyncWebServerRequest *request) {
+  Serial.println("ClockWebServer::stylesheet");
   auto body = "body { background-color: white; font-family: Arial, Helvetica, Sans-Serif; color: black; } "
               "a { color: red; text-decoration: none; } "
               "a:hover {text-decoration: underline}";

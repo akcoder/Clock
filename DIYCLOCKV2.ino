@@ -124,7 +124,7 @@ void loop() {
 
     //Don't display the leading zero for hours
     if (hours / 10 == 0) {
-      display.turnOffDigit(HOUR1, false);
+      display.turnOffDigit(HOUR1);
     } else {
       display.drawDigit(HOUR1, params->red(), params->green(), params->blue(), hours / 10);
     }

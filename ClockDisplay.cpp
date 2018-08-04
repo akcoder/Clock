@@ -8,8 +8,7 @@ ClockDisplay::ClockDisplay(Adafruit_NeoPixel &pixels) {
   _pixels = pixels;
 }
 
-void ClockDisplay::drawDigit(int offset, int r, int g, int b, int n) {
-  drawDigit(offset, r, g, b, n, false);
+void ClockDisplay::setBits(int offset, int r, int g, int b, uint8_t mask) {
 }
 
 void ClockDisplay::drawDigit(int offset, int r, int g, int b, int n, bool update) {
@@ -60,15 +59,15 @@ void ClockDisplay::drawNumber(int r, int g, int b, int number) {
 
   thousands > 0 ?
     drawDigit(HOUR1, r, g, b, thousands) :
-    turnOffDigit(HOUR1, false);
+    turnOffDigit(HOUR1);
 
   thousands > 0 || hundreds > 0 ?
     drawDigit(HOUR2, r, g, b, hundreds) :
-    turnOffDigit(HOUR2, false);
+    turnOffDigit(HOUR2);
 
   thousands > 0 || hundreds > 0 || tens > 0 ?
     drawDigit(MINUTE1, r, g, b, tens) :
-    turnOffDigit(MINUTE1, false);
+    turnOffDigit(MINUTE1);
 
   drawDigit(MINUTE2, r, g, b, ones, true);
 }
@@ -82,10 +81,6 @@ void ClockDisplay::clear() {
     _pixels.setPixelColor(i, 0);
   }
   _pixels.show();
-}
-
-void ClockDisplay::drawDots(int r, int g, int b) {
-  drawDots(r, g, b, false);
 }
 
 void ClockDisplay::drawDots(int r, int g, int b, bool update) {

@@ -61,7 +61,7 @@ void setup() {
   display.test();
 
   // Indicate which step we are on...
-  display.drawDigit(MINUTE2, 0, 0, 255, 1, true);
+  display.drawDigit(MINUTE2, 255, 255, 0, 1, true);
 
   bool wifiStarted = setupWiFi();
   if (!wifiStarted) {
@@ -73,10 +73,10 @@ void setup() {
   display.clear();
 
   if (wifiStarted) {
-    display.drawDigit(MINUTE2, 0, 0, 255, 2, true);
+    display.drawDigit(MINUTE2, 255, 255, 0, 2, true);
     configTime(TZ_SEC, DST_SEC, "pool.ntp.org");
 
-    display.drawDigit(MINUTE2, 0, 0, 255, 3, true);
+    display.drawDigit(MINUTE2, 255, 255, 0, 3, true);
     settimeofday_cb(time_is_set);
   } else {
     display.setBits(MINUTE1, 0, 255, 0, 0b01011111); // A
@@ -109,11 +109,12 @@ void loop() {
     hours = tm->tm_hour;
     mins = tm->tm_min;
 
+    if (!tm->tm_isdst) {
+      --hours;
+    }
+
     if (hours > 12) {
       hours -= 12;
-      if (!tm->tm_isdst) {
-        --hours;
-      }
     }
     if (hours == 0) {
       hours = 12;  

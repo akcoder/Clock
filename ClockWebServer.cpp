@@ -142,11 +142,11 @@ void ClockWebServer::index(AsyncWebServerRequest * request) {
   int hours = tm->tm_hour;
   int mins = -1;
 
+  if (!tm->tm_isdst) {
+    --hours;
+  }
   if (hours > 12) {
     hours -= 12;
-    if (!tm->tm_isdst) {
-      --hours;
-    }
   }
   if (hours == 0) {
     hours = 12;

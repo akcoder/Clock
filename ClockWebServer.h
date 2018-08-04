@@ -4,6 +4,7 @@
 #include <ESP8266WiFi.h>
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include <Ticker.h>
 
 #include "Parameters.h"
 
@@ -15,6 +16,7 @@ class ClockWebServer {
     private:
         Parameters *_params;
         AsyncWebServer *_server;
+        Ticker _ticker;
         void index(AsyncWebServerRequest * request);
         void info(AsyncWebServerRequest * request);
         void showParams(AsyncWebServerRequest * request);

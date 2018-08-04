@@ -63,13 +63,12 @@ void ClockWebServer::notFound(AsyncWebServerRequest * request) {
 }
 
 void ClockWebServer::reboot(AsyncWebServerRequest * request) {
-  auto response = request->beginResponse(204);
-  response->addHeader("Connection", "Close");
-  request->send(response);
+  request->redirect("/");
 
-  delay(250);
-  Serial.println("Rebooting");
-  ESP.restart();
+  _ticker.once(1, []() {
+    Serial.println("Rebooting");
+    ESP.restart();
+  });
 }
 
 void ClockWebServer::showParams(AsyncWebServerRequest *request) {
@@ -122,9 +121,6 @@ void ClockWebServer::storeParams(AsyncWebServerRequest *request) {
     _params->passphrase(passphrase);
     _params->write();
     delay(1000);
-
-    Serial.println("Restarting");
-    //ESP.restart();
   } else if (request->hasArg("store")) {
     _params->write();
   }

@@ -8,18 +8,13 @@ ClockDisplay::ClockDisplay(Adafruit_NeoPixel &pixels) {
   _pixels = pixels;
 }
 
-void ClockDisplay::setBits(int offset, int r, int g, int b, uint8_t mask) {
-}
-
-void ClockDisplay::drawDigit(int offset, int r, int g, int b, int n, bool update) {
-  int8 digit = digits[n];
-
+void ClockDisplay::setBits(int offset, int r, int g, int b, uint8_t mask, bool update) {
   uint32_t on = _pixels.Color(r, g, b);
   uint32_t off = _pixels.Color(0, 0, 0);
 
   for (int i = 0; i < 8; ++i) { // 7 bits
     for (int p = 0; p < SEGMENT_SIZE; ++p) {
-      bool isSet = (1 << i) & digit;
+      bool isSet = (1 << i) & mask;
       _pixels.setPixelColor((i * SEGMENT_SIZE) + p + offset, isSet ? on : off);
     }
   }
@@ -27,6 +22,10 @@ void ClockDisplay::drawDigit(int offset, int r, int g, int b, int n, bool update
   if (update) {
     _pixels.show();
   }
+}
+
+void ClockDisplay::drawDigit(int offset, int r, int g, int b, int n, bool update) {
+  setBits(offset, r, g, b, digits[n], update);
 }
 
 void ClockDisplay::turnOffDigit(int offset, bool update) {
@@ -93,7 +92,6 @@ void ClockDisplay::drawDots(int r, int g, int b, bool update) {
 }
 
 void ClockDisplay::test() {
-  Serial.println(F("Running self test"));
   for (int i = 0; i < 10; ++i) {
     drawDigit(HOUR1, 255, 0, 0, i);
     drawDigit(HOUR2, 255, 0, 0, i);

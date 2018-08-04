@@ -78,6 +78,9 @@ void setup() {
 
     display.drawDigit(MINUTE2, 0, 0, 255, 3, true);
     settimeofday_cb(time_is_set);
+  } else {
+    display.setBits(MINUTE1, 0, 255, 0, 0b01011111); // A
+    display.setBits(MINUTE2, 0, 255, 0, 0b00011111, true); // P
   }
 
   pinMode(2, OUTPUT);
@@ -156,7 +159,7 @@ bool setupWiFi() {
     return false;
   }
 
-  Serial.printf("Connecting to '%s'. Len: %d", params->ssid().c_str(), strlen(params->ssid().c_str()));
+  Serial.printf("Connecting to '%s'", params->ssid().c_str());
   WiFi.begin(params->ssid().c_str(), params->passphrase().c_str());
 
   int count = 0;
@@ -206,5 +209,6 @@ void showIpOnDisplay() {
     display.drawNumber(0, 0, 255, ip[i]);
     delay(2000);
   }
+
   Serial.println("Done");
 }

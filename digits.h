@@ -14,6 +14,15 @@
 #define MINUTE2 MINUTE1 + DIGIT_SIZE
 #define NUMPIXELS MINUTE2 + DIGIT_SIZE
 
+/*
+Display bit mask
+ 3
+4 2
+ 1
+5 7
+ 6
+*/
+
 // Bit mapping
 const uint8_t ZERO  = 0b01111110;
 const uint8_t ONE   = 0b01000010;

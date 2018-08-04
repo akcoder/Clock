@@ -14,6 +14,7 @@ void ClockWebServer::start() {
   _server->on("/info", HTTP_GET, std::bind(&ClockWebServer::info, this, std::placeholders::_1));
   _server->on("/params", HTTP_GET, std::bind(&ClockWebServer::showParams, this, std::placeholders::_1));
   _server->on("/params", HTTP_POST, std::bind(&ClockWebServer::storeParams, this, std::placeholders::_1));
+  _server->on("/reboot", HTTP_GET, std::bind(&ClockWebServer::reboot, this, std::placeholders::_1));
   _server->on("/style.css", HTTP_GET, std::bind(&ClockWebServer::stylesheet, this, std::placeholders::_1));
   _server->onNotFound(std::bind(&ClockWebServer::notFound, this, std::placeholders::_1));
 
@@ -61,9 +62,19 @@ void ClockWebServer::notFound(AsyncWebServerRequest * request) {
   request->send(404, "text/plain", message);
 }
 
+void ClockWebServer::reboot(AsyncWebServerRequest * request) {
+  auto response = request->beginResponse(204);
+  response->addHeader("Connection", "Close");
+  request->send(response);
+
+  delay(250);
+  Serial.println("Rebooting");
+  ESP.restart();
+}
+
 void ClockWebServer::showParams(AsyncWebServerRequest *request) {
   Serial.println("ClockWebServer::showParams");
-  char result[400];
+  char result[800];
   
   snprintf(result, sizeof(result),
   "<html><head>\
@@ -72,28 +83,28 @@ void ClockWebServer::showParams(AsyncWebServerRequest *request) {
   <h1>Clock colors</h1>\
   <form method=\"POST\" action=\"params\">\
   <p><input type=\"color\" name=\"color\" value=\"#%02X%02X%02X\" /></p>\
+  <p><input type=\"text\" name=\"ssid\" value=\"%s\" placeholder=\"ssid\" /></p>\
+  <p><input type=\"text\" name=\"passphrase\" value=\"%s\" placeholder=\"passphrase\" /></p>\
   <input type=\"submit\" value=\"Update\">\ <input type=\"submit\" name=\"store\" value=\"Store &amp; Update\">\
   </form>\
   <a href=\"/\">Home</a>\
-  </body></html>", _params->red(), _params->green(), _params->blue());
+  </body></html>", _params->red(), _params->green(), _params->blue(), _params->ssid().c_str(), _params->passphrase().c_str());
 
   request->send(200, "text/html", result);
 }
 
 void ClockWebServer::storeParams(AsyncWebServerRequest *request) {
   Serial.println("ClockWebServer::storeParams");
-  if (!request->hasArg("color")) {
-    request->send(400);
-    return;
-  }
 
+  String ssid = request->arg("ssid");
+  String passphrase = request->arg("passphrase");
   String color = request->arg("color");
-  color.setCharAt(0, ' ');
+  color.setCharAt(0, ' '); //Erase the leading "#"
 
   uint8_t red, green, blue;
 
   /* Convert the provided value to a decimal long */
-  long result = strtol(color.c_str(), nullptr, 16);
+  long result = strtol(color.c_str(), nullptr, HEX);
 
   blue = result;
   green = result >> 8;
@@ -103,7 +114,18 @@ void ClockWebServer::storeParams(AsyncWebServerRequest *request) {
   _params->green(result >> 8);
   _params->red(result >> 16);
 
-  if (request->hasArg("store")) {
+  int ssidIsDifferent = _params->ssid() != ssid;
+  int pwIsDifferent = _params->passphrase() != passphrase;
+
+  if (ssidIsDifferent != 0 || pwIsDifferent != 0) {
+    _params->ssid(ssid);
+    _params->passphrase(passphrase);
+    _params->write();
+    delay(1000);
+
+    Serial.println("Restarting");
+    //ESP.restart();
+  } else if (request->hasArg("store")) {
     _params->write();
   }
 
@@ -144,8 +166,9 @@ void ClockWebServer::index(AsyncWebServerRequest * request) {
     <p>Current Time: %d:%02d:%02d %s</p>\
     <p>Current Time: %d:%02d:%02d</p>\
     <p>Uptime: %d:%02d:%02d</p>\
-    <p><a href=\"info\">System Info</a></p>\
     <p><a href=\"params\">Change Parameters</a></p>\
+    <p><a href=\"reboot\">Reboot</a></p>\
+    <p><a href=\"info\">System Info</a></p>\
   </body>\
 </html>",
            hours, tm->tm_min, tm->tm_sec, tm->tm_hour < 12 ? "am" : "pm",

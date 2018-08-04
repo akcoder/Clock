@@ -15,9 +15,6 @@
 // for testing purpose:
 extern "C" int clock_gettime(clockid_t unused, struct timespec *tp);
 
-static char ssid[] = "Morphis (N)";
-static char pass[] = "MorphisFamily";
-
 int hours = 0;
 int mins = -1;
 
@@ -32,8 +29,8 @@ int mins = -1;
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 ClockDisplay display = ClockDisplay(pixels);
-Parameters params = Parameters();
-ClockWebServer webServer = ClockWebServer(80, &params);
+Parameters *params;
+ClockWebServer *webServer;
 
 timeval tv;
 timespec tp;
@@ -51,7 +48,11 @@ void time_is_set(void) {
 void setup() {
   Serial.begin(115200);
   Serial.println();
-  params.load();
+  params = new Parameters();
+
+  params->load();
+
+  webServer = new ClockWebServer(80, params);
 
   Serial.println("Testing display");
   display.begin();
@@ -61,15 +62,23 @@ void setup() {
 
   // Indicate which step we are on...
   display.drawDigit(MINUTE2, 0, 0, 255, 1, true);
-  setupWiFi();
-  webServer.start();
+
+  bool wifiStarted = setupWiFi();
+  if (!wifiStarted) {
+    startSoftAP();
+  }
+
+  webServer->start();
   showIpOnDisplay();
+  display.clear();
 
-  display.drawDigit(MINUTE2, 0, 0, 255, 2, true);
-  configTime(TZ_SEC, DST_SEC, "pool.ntp.org");
+  if (wifiStarted) {
+    display.drawDigit(MINUTE2, 0, 0, 255, 2, true);
+    configTime(TZ_SEC, DST_SEC, "pool.ntp.org");
 
-  display.drawDigit(MINUTE2, 0, 0, 255, 3, true);
-  settimeofday_cb(time_is_set);
+    display.drawDigit(MINUTE2, 0, 0, 255, 3, true);
+    settimeofday_cb(time_is_set);
+  }
 
   pinMode(2, OUTPUT);
 }
@@ -117,13 +126,13 @@ void loop() {
     if (hours / 10 == 0) {
       display.turnOffDigit(HOUR1, false);
     } else {
-      display.drawDigit(HOUR1, params.red(), params.green(), params.blue(), hours / 10);
+      display.drawDigit(HOUR1, params->red(), params->green(), params->blue(), hours / 10);
     }
 
-    display.drawDigit(HOUR2, params.red(), params.green(), params.blue(), hours - ((hours / 10) * 10));
-    display.drawDots(even ? params.red() : 0, even ? params.green() : 0, even ? params.blue() : 0);
-    display.drawDigit(MINUTE1, params.red(), params.green(), params.blue(), mins / 10);
-    display.drawDigit(MINUTE2, params.red(), params.green(), params.blue(), mins - ((mins / 10) * 10), true);
+    display.drawDigit(HOUR2, params->red(), params->green(), params->blue(), hours - ((hours / 10) * 10));
+    display.drawDots(even ? params->red() : 0, even ? params->green() : 0, even ? params->blue() : 0);
+    display.drawDigit(MINUTE1, params->red(), params->green(), params->blue(), mins / 10);
+    display.drawDigit(MINUTE2, params->red(), params->green(), params->blue(), mins - ((mins / 10) * 10), true);
   }
 
 
@@ -132,35 +141,48 @@ void loop() {
 
   // while (true) {
   //   for (int i = 0; i < 9999; ++i) {
-  //     drawDigit(HOUR1, params.red(), params.green(), params.blue(), 1000 % i );
-  //     drawDigit(HOUR2, params.red(), params.green(), params.blue(), 100 % i);
-  //     drawDigit(MINUTE1, params.red(), params.green(), params.blue(), 10 % i);
-  //     drawDigit(MINUTE2, params.red(), params.green(), params.blue(), i % 1 );
+  //     drawDigit(HOUR1, params->red(), params->green(), params->blue(), 1000 % i );
+  //     drawDigit(HOUR2, params->red(), params->green(), params->blue(), 100 % i);
+  //     drawDigit(MINUTE1, params->red(), params->green(), params->blue(), 10 % i);
+  //     drawDigit(MINUTE2, params->red(), params->green(), params->blue(), i % 1 );
       
   //     delay(50);
   //   }
   // }
 }
 
-void setupWiFi() {
-  Serial.print(F("Connecting to "));
-  Serial.println(ssid);
-  WiFi.begin(ssid, pass);
+bool setupWiFi() {
+  if (params->ssid().length() == 0) {
+    return false;
+  }
 
+  Serial.printf("Connecting to '%s'. Len: %d", params->ssid().c_str(), strlen(params->ssid().c_str()));
+  WiFi.begin(params->ssid().c_str(), params->passphrase().c_str());
+
+  int count = 0;
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
+    ++count;
+    if (count > 10) {
+      WiFi.disconnect();
+      return false;
+    }
   }
 
   Serial.println("");
 
   Serial.println(F("WiFi connected"));
-  Serial.printf("IP address: %s\n", WiFi.localIP().toString().c_str());
+  Serial.printf("IP address: %s, Channel: %d\n", WiFi.localIP().toString().c_str(), WiFi.channel());
 
-  if (!MDNS.begin("web-clock")) {             // Start the mDNS responder for web-clock.local
+  if (MDNS.begin("web-clock")) {
+    MDNS.addService("http", "tcp", 80);
+    Serial.println(F("mDNS responder started"));
+  } else {
     Serial.println(F("Error setting up MDNS responder!"));
   }
-  Serial.println(F("mDNS responder started"));
+
+  return true;
 }
 
 #define PTM(w) \
@@ -175,12 +197,14 @@ void printTm(const char* what, const tm* tm) {
 }
 
 void showIpOnDisplay() {
-  IPAddress ip = WiFi.localIP();
+  IPAddress ip = WiFi.status() == WL_CONNECTED ?
+    WiFi.localIP(): WiFi.softAPIP();
+
+  Serial.printf("Displaying ip: %s\n\n", ip.toString().c_str());
+
   for (int8_t i = 0; i < 4; ++i) {
     display.drawNumber(0, 0, 255, ip[i]);
     delay(2000);
   }
-
-  Serial.println();
-  Serial.println();
+  Serial.println("Done");
 }

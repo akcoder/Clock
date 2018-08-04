@@ -19,6 +19,7 @@ class ClockWebServer {
         void info(AsyncWebServerRequest * request);
         void showParams(AsyncWebServerRequest * request);
         void storeParams(AsyncWebServerRequest * request);
+        void reboot(AsyncWebServerRequest * request);
         void notFound(AsyncWebServerRequest * request);
         void stylesheet(AsyncWebServerRequest * request);
 };

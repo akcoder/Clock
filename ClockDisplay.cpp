@@ -53,20 +53,6 @@ int ClockDisplay::nthDigit(int place, int number) {
 }
 
 void ClockDisplay::drawNumber(int r, int g, int b, int number) {
-  // const uint8_t places[] = { HOUR1, HOUR2, MINUTE1, MINUTE2 };
-
-  // int place = 0;
-  // int factor = 1;
-
-  // while (factor > 1) {
-  //   factor = factor / 10;
-
-
-  //   printf(“% d “, num / factor);
-
-  //   num = num % factor;
-  // }
-
   int thousands = nthDigit(3, number);
   int hundreds = nthDigit(2, number);
   int tens = nthDigit(1, number);
@@ -76,8 +62,14 @@ void ClockDisplay::drawNumber(int r, int g, int b, int number) {
     drawDigit(HOUR1, r, g, b, thousands) :
     turnOffDigit(HOUR1, false);
 
-  drawDigit(HOUR2, r, g, b, hundreds);
-  drawDigit(MINUTE1, r, g, b, tens);
+  thousands > 0 || hundreds > 0 ?
+    drawDigit(HOUR2, r, g, b, hundreds) :
+    turnOffDigit(HOUR2, false);
+
+  thousands > 0 || hundreds > 0 || tens > 0 ?
+    drawDigit(MINUTE1, r, g, b, tens) :
+    turnOffDigit(MINUTE1, false);
+
   drawDigit(MINUTE2, r, g, b, ones, true);
 }
 

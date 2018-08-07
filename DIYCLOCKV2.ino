@@ -4,6 +4,7 @@
 #include "digits.h"
 #include "ClockDisplay.h"
 #include "ClockWebServer.h"
+#include "SoftAP.h";
 #include "Parameters.h"
 
 #include <stdio.h>
@@ -11,6 +12,9 @@
 #include <time.h>                       // time() ctime()
 #include <sys/time.h>                   // struct timeval
 #include <coredecls.h>                  // settimeofday_cb()
+
+const char *softApSsid = "Clock-AP";
+const char *softApPassword = "Remington";
 
 // for testing purpose:
 extern "C" int clock_gettime(clockid_t unused, struct timespec *tp);
@@ -25,10 +29,12 @@ int mins = -1;
 #define TZ_SEC          ((TZ)*3600)
 #define DST_SEC         ((DST_MN)*60)
 
-#define LED_PIN 5 /* d1 on the node mcu board */
+#define LED_PIN 5         /* d1 on the node mcu board */
+#define HEARTBEAT_PIN 2   /* d4 on node mcu board */
+#define RESET_PIN 13      /* d7 */
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
-ClockDisplay display = ClockDisplay(pixels);
+ClockDisplay *display = new ClockDisplay(pixels);
 Parameters *params;
 ClockWebServer *webServer;
 
@@ -55,35 +61,33 @@ void setup() {
   webServer = new ClockWebServer(80, params);
 
   Serial.println("Testing display");
-  display.begin();
-  display.clear();
+  display->begin();
+  display->clear();
 
-  display.test();
+  display->test();
 
   // Indicate which step we are on...
-  display.drawDigit(MINUTE2, 255, 255, 0, 1, true);
+  display->drawDigit(MINUTE2, 255, 255, 0, 1, true);
 
   bool wifiStarted = setupWiFi();
   if (!wifiStarted) {
-    startSoftAP();
+    SoftAP softAp = SoftAP(softApSsid, softApPassword, params, display);
+    softAp.init();
+    startWebServerAndShowIp();
+    softAp.run(); //This never exits....
   }
 
-  webServer->start();
-  showIpOnDisplay();
-  display.clear();
+  startWebServerAndShowIp();
 
   if (wifiStarted) {
-    display.drawDigit(MINUTE2, 255, 255, 0, 2, true);
+    display->drawDigit(MINUTE2, 255, 255, 0, 2, true);
     configTime(TZ_SEC, DST_SEC, "pool.ntp.org");
 
-    display.drawDigit(MINUTE2, 255, 255, 0, 3, true);
+    display->drawDigit(MINUTE2, 255, 255, 0, 3, true);
     settimeofday_cb(time_is_set);
-  } else {
-    display.setBits(MINUTE1, 0, 255, 0, 0b01011111); // A
-    display.setBits(MINUTE2, 0, 255, 0, 0b00011111, true); // P
   }
 
-  pinMode(2, OUTPUT);
+  pinMode(HEARTBEAT_PIN, OUTPUT);
 }
 
 void loop() {
@@ -96,7 +100,7 @@ void loop() {
   static time_t lastv = 0;
   if (cbtime_set && lastv != tv.tv_sec) {
     even = tv.tv_sec % 2;
-    digitalWrite(2, even); // Heartbeat the onboard led
+    digitalWrite(HEARTBEAT_PIN, even); // Heartbeat the onboard led
     lastv = tv.tv_sec;
     // Serial.println();
     // printTm("localtime", localtime(&now));
@@ -128,15 +132,15 @@ void loop() {
 
     //Don't display the leading zero for hours
     if (hours / 10 == 0) {
-      display.turnOffDigit(HOUR1);
+      display->turnOffDigit(HOUR1);
     } else {
-      display.drawDigit(HOUR1, params->red(), params->green(), params->blue(), hours / 10);
+      display->drawDigit(HOUR1, params->red(), params->green(), params->blue(), hours / 10);
     }
 
-    display.drawDigit(HOUR2, params->red(), params->green(), params->blue(), hours - ((hours / 10) * 10));
-    display.drawDots(even ? params->red() : 0, even ? params->green() : 0, even ? params->blue() : 0);
-    display.drawDigit(MINUTE1, params->red(), params->green(), params->blue(), mins / 10);
-    display.drawDigit(MINUTE2, params->red(), params->green(), params->blue(), mins - ((mins / 10) * 10), true);
+    display->drawDigit(HOUR2, params->red(), params->green(), params->blue(), hours - ((hours / 10) * 10));
+    display->drawDots(even ? params->red() : 0, even ? params->green() : 0, even ? params->blue() : 0);
+    display->drawDigit(MINUTE1, params->red(), params->green(), params->blue(), mins / 10);
+    display->drawDigit(MINUTE2, params->red(), params->green(), params->blue(), mins - ((mins / 10) * 10), true);
   }
 
 
@@ -168,15 +172,14 @@ bool setupWiFi() {
     delay(500);
     Serial.print(".");
     ++count;
-    if (count > 10) {
+    if (count > 20) {
+      Serial.println(F("failed!"));
       WiFi.disconnect();
       return false;
     }
   }
 
-  Serial.println("");
-
-  Serial.println(F("WiFi connected"));
+  Serial.println(F("\nWiFi connected"));
   Serial.printf("IP address: %s, Channel: %d\n", WiFi.localIP().toString().c_str(), WiFi.channel());
 
   if (MDNS.begin("web-clock")) {
@@ -207,9 +210,15 @@ void showIpOnDisplay() {
   Serial.printf("Displaying ip: %s\n\n", ip.toString().c_str());
 
   for (int8_t i = 0; i < 4; ++i) {
-    display.drawNumber(0, 0, 255, ip[i]);
+    display->drawNumber(0, 0, 255, ip[i]);
     delay(2000);
   }
 
   Serial.println("Done");
+}
+
+void startWebServerAndShowIp() {
+  webServer->start();
+  showIpOnDisplay();
+  display->clear();
 }

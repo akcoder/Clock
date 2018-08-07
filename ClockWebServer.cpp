@@ -16,6 +16,7 @@ void ClockWebServer::start() {
   _server->on("/params", HTTP_POST, std::bind(&ClockWebServer::storeParams, this, std::placeholders::_1));
   _server->on("/reboot", HTTP_GET, std::bind(&ClockWebServer::reboot, this, std::placeholders::_1));
   _server->on("/style.css", HTTP_GET, std::bind(&ClockWebServer::stylesheet, this, std::placeholders::_1));
+  _server->on("/scan.json", HTTP_GET, std::bind(&ClockWebServer::scan, this, std::placeholders::_1));
   _server->onNotFound(std::bind(&ClockWebServer::notFound, this, std::placeholders::_1));
 
   _server->begin();
@@ -23,25 +24,28 @@ void ClockWebServer::start() {
 
 void ClockWebServer::info(AsyncWebServerRequest * request) {
   Serial.println("ClockWebServer::info");
-  char result[1024];
+  char body[512];
 
-  snprintf(result, sizeof(result),
-  "<html><head>\
-  <link rel=\"stylesheet\" href=\"style.css\" type=\"text/css\"> \
-  </head><body>\
-  <h1>System Info</h1>\
-  <p>Heap: %d</p>\
+  snprintf(body, sizeof(body),
+  "<p>Heap: %d</p>\
   <p>Core version: %s</p>\
   <p>SDK version: %s</p>\
   <p>CPU freq: %d MHz</p>\
   <p>Reset reason: %s</p>\
   <p>Sketch size: %d</p>\
   <p>Free sketch size: %d</p>\
-  <a href=\"/\">Home</a>\
-  </body></html>", ESP.getFreeHeap(), ESP.getCoreVersion().c_str(), ESP.getSdkVersion(),
+  <a href=\"/\">Home</a>", ESP.getFreeHeap(), ESP.getCoreVersion().c_str(), ESP.getSdkVersion(),
     ESP.getCpuFreqMHz(), ESP.getResetReason().c_str(), ESP.getSketchSize(), ESP.getFreeSketchSpace());
 
-  request->send(200, "text/html", result);
+  String page = FPSTR(HTML_HEAD);
+  page.replace("{v}", "Info");
+  page += FPSTR(HTML_STYLE);
+  page += FPSTR(HTML_HEAD_END);
+  page += String(F("<h1>System Info</h1>"));
+  page += body;
+  page += FPSTR(HTML_END);
+
+  request->send(200, "text/html", page);
 }
 
 void ClockWebServer::notFound(AsyncWebServerRequest * request) {
@@ -73,23 +77,28 @@ void ClockWebServer::reboot(AsyncWebServerRequest * request) {
 
 void ClockWebServer::showParams(AsyncWebServerRequest *request) {
   Serial.println("ClockWebServer::showParams");
-  char result[800];
-  
-  snprintf(result, sizeof(result),
-  "<html><head>\
-  <link rel=\"stylesheet\" href=\"style.css\" type=\"text/css\"> \
-  </head><body>\
-  <h1>Clock colors</h1>\
-  <form method=\"POST\" action=\"params\">\
-  <p><input type=\"color\" name=\"color\" value=\"#%02X%02X%02X\" /></p>\
-  <p><input type=\"text\" name=\"ssid\" value=\"%s\" placeholder=\"ssid\" /></p>\
-  <p><input type=\"text\" name=\"passphrase\" value=\"%s\" placeholder=\"passphrase\" /></p>\
-  <input type=\"submit\" value=\"Update\">\ <input type=\"submit\" name=\"store\" value=\"Store &amp; Update\">\
-  </form>\
-  <a href=\"/\">Home</a>\
-  </body></html>", _params->red(), _params->green(), _params->blue(), _params->ssid().c_str(), _params->passphrase().c_str());
 
-  request->send(200, "text/html", result);
+  char body[500];
+  
+  snprintf(body, sizeof(body),
+  "<p><input type=\"color\" name=\"color\" value=\"#%02X%02X%02X\" /></p>\
+  <p><input type=\"text\" name=\"ssid\" value=\"%s\" placeholder=\"ssid\" /></p>\
+  <p><input type=\"text\" name=\"passphrase\" value=\"%s\" placeholder=\"passphrase\" /></p>",
+  _params->red(), _params->green(), _params->blue(), _params->ssid().c_str(), _params->passphrase().c_str());
+
+  String page = FPSTR(HTML_HEAD);
+  page.replace("{v}", "Parameters");
+  page += FPSTR(HTML_STYLE);
+  page += FPSTR(HTML_HEAD_END);
+  page += String(F("<h1>Parameters</h1>"));
+  page += String(F("<form method=\"POST\" action=\"params\">"));
+  page += body;
+  page += String(F("<input type=\"submit\" value=\"Update\">\
+    <input type=\"submit\" name=\"store\" value=\"Store &amp; Update\">\
+    </form><p><a href=\"/\">Home</a></p>"));
+  page += FPSTR(HTML_END);
+
+  request->send(200, "text/html", page);
 }
 
 void ClockWebServer::storeParams(AsyncWebServerRequest *request) {
@@ -151,35 +160,126 @@ void ClockWebServer::index(AsyncWebServerRequest * request) {
   if (hours == 0) {
     hours = 12;
   }
-  snprintf(temp, sizeof(temp),
-           "<html>\
-  <head>\
-    <title>Clock</title>\
-    <link rel=\"stylesheet\" href=\"style.css\" type=\"text/css\"> \
-  </head>\
-  <body>\
-    <h1>NTP Clock!</h1>\
-    <p>Current Time: %d:%02d:%02d %s</p>\
-    <p>Current Time: %d:%02d:%02d</p>\
-    <p>Uptime: %d:%02d:%02d</p>\
-    <p><a href=\"params\">Change Parameters</a></p>\
+
+  char body[200];
+
+  snprintf(body, sizeof(body),
+  "<p>Current Time: %d:%02d:%02d %s</p>\
+   <p>Current Time: %d:%02d:%02d</p>\
+   <p>Uptime: %d:%02d:%02d</p>",
+      hours, tm->tm_min, tm->tm_sec, tm->tm_hour < 12 ? "am" : "pm",
+      tm->tm_hour, tm->tm_min, tm->tm_sec,
+      up_hr, up_min % 60, up_sec % 60);
+
+  String page = FPSTR(HTML_HEAD);
+  page.replace("{v}", "Clock");
+  page += FPSTR(HTML_STYLE);
+  page += FPSTR(HTML_HEAD_END);
+  page += String(F("<h1>NTP Clock!</h1>"));
+  page += body;
+  page += String(F("<p><a href=\"params\">Change Parameters</a></p>\
     <p><a href=\"reboot\">Reboot</a></p>\
-    <p><a href=\"info\">System Info</a></p>\
-  </body>\
-</html>",
-           hours, tm->tm_min, tm->tm_sec, tm->tm_hour < 12 ? "am" : "pm",
-           tm->tm_hour, tm->tm_min, tm->tm_sec,
-           up_hr, up_min % 60, up_sec % 60);
-  request->send(200, "text/html", temp);
+    <p><a href=\"info\">System Info</a></p>"));
+  page += FPSTR(HTML_END);
+
+  request->send(200, "text/html", page);
 }
 
 void ClockWebServer::stylesheet(AsyncWebServerRequest *request) {
   Serial.println("ClockWebServer::stylesheet");
-  auto body = "body { background-color: white; font-family: Arial, Helvetica, Sans-Serif; color: black; } "
-              "a { color: red; text-decoration: none; } "
-              "a:hover {text-decoration: underline}";
 
-  auto response = request->beginResponse(200, "text/css", body);
+  auto response = request->beginResponse(200, "text/css", FPSTR(HTML_STYLESHEET));
   response->addHeader("Cache-Control", "max-age=86400");
   request->send(response);
+}
+
+/** scan.json */
+void ClockWebServer::scan(AsyncWebServerRequest *request) {
+  int n = WiFi.scanNetworks(false, true);
+  if (n == 0) {
+    Serial.println(F("No networks found"));
+    request->send(204);
+    return;
+  }
+
+  //sort networks
+  uint16_t indices[n];
+
+  getSortedAPList(indices);
+  
+  StaticJsonDocument<1024> doc;
+  JsonArray root = doc.to<JsonArray>();
+
+  //display networks in page
+  for (int i = 0; i < n; i++) {
+    if (indices[i] == -1) {
+      continue; // skip dups
+    }
+    Serial.printf("ssid: %s, rssi: %d\n", WiFi.SSID(indices[i]).c_str(), WiFi.RSSI(indices[i]));
+
+    int quality = getRSSIasQuality(WiFi.RSSI(indices[i]));
+
+    if (_minimumQuality == -1 || _minimumQuality < quality) {
+        JsonObject obj;
+        obj["ssid"] = WiFi.SSID(indices[i]).c_str();
+        obj["rssi"] = quality;
+        obj["enc"] = WiFi.encryptionType(indices[i]) != ENC_TYPE_NONE;
+
+        root.add(obj);
+    }
+  }
+
+  String output;
+  serializeJson(doc, output);
+
+  request->send(200, F("application/json"), output);
+}
+
+int ClockWebServer::getRSSIasQuality(int rssi) {
+  int quality = 0;
+
+  if (rssi <= -100) {
+    quality = 0;
+  } else if (rssi >= -50) {
+    quality = 100;
+  } else {
+    quality = 2 * (rssi + 100);
+  }
+
+  return quality;
+}
+
+void ClockWebServer::getSortedAPList(uint16_t indices[]) {
+  int16_t n = sizeof(indices);
+
+  for (int i = 0; i < n; i++) {
+    indices[i] = i;
+  }
+
+  // RSSI SORT
+  // old sort
+  for (int i = 0; i < n; i++) {
+    for (int j = i + 1; j < n; j++) {
+      if (WiFi.RSSI(indices[j]) > WiFi.RSSI(indices[i])) {
+        std::swap(indices[i], indices[j]);
+      }
+    }
+  }
+
+  //Remove duplicate ssids
+  String cssid;
+  for (int i = 0; i < n; i++) {
+    if (indices[i] == -1) {
+      continue;
+    }
+
+    cssid = WiFi.SSID(indices[i]);
+
+    for (int j = i + 1; j < n; j++) {
+      if (cssid == WiFi.SSID(indices[j])) {
+        Serial.printf("DUP AP: %s\n", WiFi.SSID(indices[j]).c_str());
+        indices[j] = -1; // set dup aps to index -1
+      }
+    }
+  }
 }

@@ -32,15 +32,19 @@ void ClockWebServer::info(AsyncWebServerRequest * request) {
   String coreVersion = ESP.getCoreVersion();
   coreVersion.replace('_', '.');
   snprintf_P(body, sizeof(body),
-  PSTR("<p>Heap: %d</p>\
-  <p>Core version: v%s</p>\
-  <p>SDK version: %s</p>\
-  <p>CPU freq: %d MHz</p>\
-  <p>Reset reason: %s</p>\
-  <p>Sketch size: %d</p>\
-  <p>Free sketch size: %d</p>\
-  <a href=\"/\">Home</a>"), ESP.getFreeHeap(), coreVersion.c_str(), ESP.getSdkVersion(),
-    ESP.getCpuFreqMHz(), ESP.getResetReason().c_str(), ESP.getSketchSize(), ESP.getFreeSketchSpace());
+             PSTR("<p>Compiled: %s %s"
+                  "<p>Heap: %d</p>"
+                  "<p>Core version: v%s</p>"
+                  "<p>SDK version: %s</p>"
+                  "<p>CPU freq: %d MHz</p>"
+                  "<p>Reset reason: %s</p>"
+                  "<p>Sketch size: %d</p>"
+                  "<p>Free sketch size: %d</p>"
+                  "<a href=\"/\">Home</a>"),
+             __DATE__, __TIME__, ESP.getFreeHeap(), coreVersion.c_str(),
+             ESP.getSdkVersion(), ESP.getCpuFreqMHz(),
+             ESP.getResetReason().c_str(), ESP.getSketchSize(),
+             ESP.getFreeSketchSpace());
 
   String page = FPSTR(HTML_HEAD);
   page.replace("{v}", "Info");
@@ -54,7 +58,7 @@ void ClockWebServer::info(AsyncWebServerRequest * request) {
 }
 
 void ClockWebServer::notFound(AsyncWebServerRequest * request) {
-  Serial.printf("ClockWebServer::notFound %s\n", request->url().c_str());
+  Serial.printf_P(PSTR("ClockWebServer::notFound %s\n"), request->url().c_str());
   String message = "File Not Found\n\n";
   message += "URI: ";
   message += request->url();
@@ -110,9 +114,9 @@ void ClockWebServer::showParams(AsyncWebServerRequest *request) {
   page += String(F("<h1>Parameters</h1>"));
   page += String(F("<form method=\"POST\" action=\"params\">"));
   page += body;
-  page += String(F("<input type=\"submit\" value=\"Update\">\
-    <input type=\"submit\" name=\"store\" value=\"Store &amp; Update\">\
-    </form><p><a href=\"/\">Home</a></p>"));
+  page += String(F("<input type=\"submit\" value=\"Update\">"
+    "<input type=\"submit\" name=\"store\" value=\"Store &amp; Update\">"
+    "</form><p><a href=\"/\">Home</a></p>"));
   page += FPSTR(HTML_END);
 
   request->send(200, "text/html", page);
@@ -234,7 +238,7 @@ void ClockWebServer::scan(AsyncWebServerRequest *request) {
     if (indices[i] == -1) {
       continue; // skip dups
     }
-    Serial.printf("ssid: %s, rssi: %d\n", WiFi.SSID(indices[i]).c_str(), WiFi.RSSI(indices[i]));
+    Serial.printf_P(PSTR("ssid: %s, rssi: %d\n"), WiFi.SSID(indices[i]).c_str(), WiFi.RSSI(indices[i]));
 
     int quality = getRSSIasQuality(WiFi.RSSI(indices[i]));
 

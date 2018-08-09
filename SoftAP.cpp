@@ -1,14 +1,6 @@
 #include "SoftAP.h";
 #include "ClockWebServer.h";
 
-SoftAP::SoftAP(const char *ssid, const char *passphrase, Parameters *params,
-               ClockDisplay * display) {
-  _display = display;
-  _params = params;
-  _ssid = ssid;
-  _passphrase = passphrase;
-}
-
 void SoftAP::init() {
   _display->setBits(MINUTE1, 0, 255, 0, 0b01011111);       // A
   _display->setBits(MINUTE2, 0, 255, 0, 0b00011111, true); // P
@@ -37,6 +29,6 @@ void SoftAP::startAp() {
 
   delay(500); // Without delay I've seen the IP address blank
 
-  Serial.print("AP IP address: ");
+  Serial.print(F("AP IP address: "));
   Serial.println(WiFi.softAPIP());
 }

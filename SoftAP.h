@@ -15,7 +15,13 @@ const byte DNS_PORT = 53;
 
 class SoftAP {
     public:
-        SoftAP(const char * ssid, const char * passphrase, Parameters *params, ClockDisplay * display);
+        SoftAP(const char * ssid, const char * passphrase, Parameters *params, ClockDisplay * display):
+            _ssid(ssid),
+            _passphrase(passphrase),
+            _params(params),
+            _display(display){
+            }
+
         void init();
         void run();
 

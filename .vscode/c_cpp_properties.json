@@ -6,6 +6,7 @@
                 "ARDUINO=100"
             ],
             "includePath": [
+                "/home/dan/Arduino/libraries/Rtc_by_Makuna/src",
                 "/home/dan/Arduino/libraries/ESPAsyncTCP/src",
                 "/home/dan/Arduino/libraries/ArduinoJson/src",
                 "/home/dan/Arduino/libraries/ArduinoJson/src/ArduinoJson",
@@ -17,6 +18,7 @@
                 "/home/dan/Arduino/libraries/Adafruit_ESP8266",
                 "/home/dan/Arduino/libraries/Adafruit_NeoPixel",
                 "/opt/arduino-1.8.5/libraries/WiFi/src",
+                "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.2/libraries/Wire",
                 "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.2/tools/sdk/lwip/include",
                 "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.2/libraries/Ticker",
                 "/home/dan/.arduino15/packages/esp8266/hardware/esp8266/2.4.2/libraries/ESP8266mDNS",

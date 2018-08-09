@@ -238,9 +238,6 @@ void updateRtcFromNtp() {
   printTm("localtime", localtime(&now));
   Serial.println();
 
-  // Serial.printf_P(PSTR("RTC %02d:%02d:%02d\n"), rtcNow.Hour(),
-  // rtcNow.Minute(), rtcNow.Second());
-
   RtcDateTime dtTime = RtcDateTime(1900 + tm->tm_year, tm->tm_mon, tm->tm_mday, hours,
                                    tm->tm_min, tm->tm_sec);
 
@@ -255,9 +252,6 @@ void updateRtcFromNtp() {
     Serial.printf_P(PSTR("RTC was not actively running, starting now. Now running? %s\n"),
       Rtc.GetIsRunning() ? "Yes" : "No");
   }
-
-  Serial.printf_P(PSTR("RTC IsDateTimeValid? %s\n"),
-      Rtc.IsDateTimeValid() ? "Yes" : "No");
 
   Rtc.Enable32kHzPin(false);
   Rtc.SetSquareWavePin(DS3231SquareWavePin_ModeNone);

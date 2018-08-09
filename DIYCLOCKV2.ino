@@ -202,14 +202,13 @@ void showIpOnDisplay() {
   IPAddress ip = WiFi.status() == WL_CONNECTED ?
     WiFi.localIP(): WiFi.softAPIP();
 
-  Serial.printf_P(PSTR("Displaying ip: %s\n\n"), ip.toString().c_str());
+  Serial.printf_P(PSTR("Displaying ip: %s"), ip.toString().c_str());
 
   for (int8_t i = 0; i < 4; ++i) {
     display->drawNumber(0, 0, 255, ip[i]);
     delay(2000);
   }
-
-  Serial.println(F("Done"));
+  Serial.println(F(" - Done"));
 }
 
 void startWebServerAndShowIp() {

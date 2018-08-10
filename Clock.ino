@@ -4,7 +4,7 @@
 #include "digits.h"
 #include "ClockDisplay.h"
 #include "ClockWebServer.h"
-#include "SoftAP.h";
+#include "SoftAP.h"
 #include "Parameters.h"
 #include "config.h"
 

@@ -1,5 +1,5 @@
-#include "SoftAP.h";
-#include "ClockWebServer.h";
+#include "SoftAP.h"
+#include "ClockWebServer.h"
 
 void SoftAP::init() {
   _display->setBits(MINUTE1, 0, 255, 0, 0b01011111);       // A

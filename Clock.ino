@@ -37,7 +37,7 @@ ClockDisplay *display = new ClockDisplay(pixels);
 Parameters *params;
 ClockWebServer *webServer;
 
-RtcDS3231<TwoWire> Rtc(Wire);
+RtcDS3231<TwoWire> rtc(Wire);
 
 timeval tv;
 timespec tp;
@@ -62,7 +62,7 @@ void setup() {
   params = new Parameters();
   params->load();
 
-  webServer = new ClockWebServer(httpAuthUsername, httpAuthPassword, 80, params, &Rtc);
+  webServer = new ClockWebServer(httpAuthUsername, httpAuthPassword, 80, params, &rtc);
 
   Serial.println(F("Testing display"));
   display->begin();
@@ -84,7 +84,7 @@ void setup() {
   startWebServerAndShowIp();
 
   if (wifiStarted) {
-    Rtc.Begin();
+    rtc.Begin();
 
     display->drawDigit(MINUTE2, 255, 255, 0, 2, true);
     configTime(TZ_SEC, DST_SEC, "pool.ntp.org");
@@ -105,7 +105,7 @@ void loop() {
   static uint8_t prevSecond = -1;
 
   // localtime / gmtime every second change
-  rtcNow = Rtc.GetDateTime();
+  rtcNow = rtc.GetDateTime();
 
   //Update the clock from NTP at 2:01:00 am
   if (rtcNow.Hour() == 2 && rtcNow.Minute() == 1 && rtcNow.Second() == 0) {
@@ -113,45 +113,19 @@ void loop() {
   }
 
   if (cbtime_set && prevSecond != rtcNow.Second()) {
-    //printDateTime(rtcNow);
     even = rtcNow.Second() % 2;
     prevSecond = rtcNow.Second();
 
     digitalWrite(HEARTBEAT_PIN, even);
-    // Serial.println();
-    // printTm("localtime", localtime(&now));
-    // Serial.println();
-    // printTm("gmtime   ", gmtime(&now));
-    // Serial.println();
-    // Serial.println();
 
-    hours = rtcNow.Hour();
-    mins = rtcNow.Minute();
-
-    if (hours > 12) {
-      hours -= 12;
-    }
-    if (hours == 0) {
-      hours = 12;  
-    }
-
-    //Serial.printf_P(PSTR("RTC %02d:%02d:%02d\n"), rtcNow.Hour(), rtcNow.Minute(), rtcNow.Second());
-
-    //Don't display the leading zero for hours
-    if (hours / 10 == 0) {
-      display->turnOffDigit(HOUR1);
+    if (rtcNow.Second() == 30) {
+      showTemp();
     } else {
-      display->drawDigit(HOUR1, params->red(), params->green(), params->blue(), hours / 10);
+      displayTime(rtcNow);
     }
-
-    display->drawDigit(HOUR2, params->red(), params->green(), params->blue(), hours - ((hours / 10) * 10));
-    display->drawDots(even ? params->red() : 0, even ? params->green() : 0, even ? params->blue() : 0);
-    display->drawDigit(MINUTE1, params->red(), params->green(), params->blue(), mins / 10);
-    display->drawDigit(MINUTE2, params->red(), params->green(), params->blue(), mins - ((mins / 10) * 10), true);
   }
 
-  // simple drifting loop
-  delay(500);
+  delay(250);
 }
 
 bool setupWiFi() {
@@ -243,17 +217,17 @@ void updateRtcFromNtp() {
   Serial.printf_P(PSTR("Year: %d, Mon: %d, Day: %d, %02d:%02d:%02d\n"),
     dtTime.Year(), dtTime.Month(), dtTime.Day(), hours, dtTime.Minute(), dtTime.Second());
 
-  Rtc.SetDateTime(dtTime);
+  rtc.SetDateTime(dtTime);
 
-  if (!Rtc.GetIsRunning()) {
-    Rtc.SetIsRunning(true);
+  if (!rtc.GetIsRunning()) {
+    rtc.SetIsRunning(true);
 
     Serial.printf_P(PSTR("RTC was not actively running, starting now. Now running? %s\n"),
-      Rtc.GetIsRunning() ? "Yes" : "No");
+      rtc.GetIsRunning() ? "Yes" : "No");
   }
 
-  Rtc.Enable32kHzPin(false);
-  Rtc.SetSquareWavePin(DS3231SquareWavePin_ModeNone);
+  rtc.Enable32kHzPin(false);
+  rtc.SetSquareWavePin(DS3231SquareWavePin_ModeNone);
 }
 
 void printDateTime(const RtcDateTime &dt) {
@@ -263,4 +237,47 @@ void printDateTime(const RtcDateTime &dt) {
              PSTR("D: %04u-%02u-%02u T: %02u:%02u:%02u\n"), dt.Year(),
              dt.Month(), dt.Day(), dt.Hour(), dt.Minute(), dt.Second());
   Serial.print(datestring);
+}
+
+
+void displayTime(RtcDateTime &rtcNow) {
+  bool even = rtcNow.Second() % 2;
+  // Serial.println();
+  // printTm("localtime", localtime(&now));
+  // Serial.println();
+  // printTm("gmtime   ", gmtime(&now));
+  // Serial.println();
+  // Serial.println();
+
+  hours = rtcNow.Hour();
+  mins = rtcNow.Minute();
+
+  if (hours > 12) {
+    hours -= 12;
+  }
+  if (hours == 0) {
+    hours = 12;  
+  }
+
+  //Serial.printf_P(PSTR("RTC %02d:%02d:%02d\n"), rtcNow.Hour(), rtcNow.Minute(), rtcNow.Second());
+
+  //Don't display the leading zero for hours
+  if (hours / 10 == 0) {
+    display->turnOffDigit(HOUR1);
+  } else {
+    display->drawDigit(HOUR1, params->red(), params->green(), params->blue(), hours / 10);
+  }
+
+  display->drawDigit(HOUR2, params->red(), params->green(), params->blue(), hours - ((hours / 10) * 10));
+  display->drawDots(even ? params->red() : 0, even ? params->green() : 0, even ? params->blue() : 0);
+  display->drawDigit(MINUTE1, params->red(), params->green(), params->blue(), mins / 10);
+  display->drawDigit(MINUTE2, params->red(), params->green(), params->blue(), mins - ((mins / 10) * 10), true);
+}
+
+void showTemp() {
+  RtcTemperature temp = rtc.GetTemperature();
+  int f = (int)temp.AsFloatDegF();
+
+  display->drawNumber(f >= 80 ? 255 : 0, (f < 80 && f >= 60) ? 255 : 0, f < 60 ? 255 : 0, f);
+  delay(2000);
 }

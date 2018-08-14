@@ -11,9 +11,6 @@ void Parameters::load() {
 
   EEPROM.end();
 
-  Serial.printf("1: red: %d, green: %d, blue: %d\n", config.red, config.green, config.blue);
-  Serial.printf("1: ssid: %s, passphrase: %s\n", config.ssid, config.passphrase);
-
   Serial.printf("ok: {%s}\n", ok);
   if (String(ok) == String("OK")) {
     red(config.red);
@@ -32,8 +29,8 @@ void Parameters::load() {
     write();
   }
 
-  Serial.printf("2: red: %d, green: %d, blue: %d\n", red(), green(), blue());
-  Serial.printf("2: ssid: %s, passphrase: %s\n", ssid().c_str(), passphrase().c_str());
+  Serial.printf_P(PSTR("Params: red: %d, green: %d, blue: %d\n"), red(), green(), blue());
+  Serial.printf_P(PSTR("Params: ssid: %s, passphrase: %s\n"), ssid().c_str(), passphrase().c_str());
 }
 
 void Parameters::write() {
@@ -71,7 +68,6 @@ void Parameters::blue(uint8_t blue) { _blue = blue; }
 
 String Parameters::ssid() { return _ssid; }
 void Parameters::ssid(String ssid) {
-  Serial.printf("Updating SSID: Old: [%s], New: [%s], Size: %d\n\n", _ssid.c_str(), ssid.c_str(), sizeof(_ssid));
   _ssid = String(ssid);
 }
 

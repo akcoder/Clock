@@ -8,7 +8,7 @@ ClockDisplay::ClockDisplay(Adafruit_NeoPixel &pixels) {
   _pixels = pixels;
 }
 
-void ClockDisplay::setBits(int offset, int r, int g, int b, uint8_t mask, bool update) {
+void ClockDisplay::setBits(uint16_t offset, uint16_t r, uint16_t g, uint16_t b, uint8_t mask, bool update) {
   uint32_t on = _pixels.Color(r, g, b);
   uint32_t off = _pixels.Color(0, 0, 0);
 
@@ -24,11 +24,11 @@ void ClockDisplay::setBits(int offset, int r, int g, int b, uint8_t mask, bool u
   }
 }
 
-void ClockDisplay::drawDigit(int offset, int r, int g, int b, int n, bool update) {
+void ClockDisplay::drawDigit(uint16_t offset, uint16_t r, uint16_t g, uint16_t b, int n, bool update) {
   setBits(offset, r, g, b, digits[n], update);
 }
 
-void ClockDisplay::turnOffDigit(int offset, bool update) {
+void ClockDisplay::turnOffDigit(uint16_t offset, bool update) {
   uint32_t off = _pixels.Color(0, 0, 0);
 
   for (int i = 0; i < 8; ++i) { // 7 bits
@@ -50,7 +50,7 @@ int ClockDisplay::nthDigit(int place, int number) {
   return number % 10;
 }
 
-void ClockDisplay::drawNumber(int r, int g, int b, int number) {
+void ClockDisplay::drawNumber(uint16_t r, uint16_t g, uint16_t b, int number) {
   int thousands = nthDigit(3, number);
   int hundreds = nthDigit(2, number);
   int tens = nthDigit(1, number);
@@ -82,9 +82,14 @@ void ClockDisplay::clear() {
   _pixels.show();
 }
 
-void ClockDisplay::drawDots(int r, int g, int b, bool update) {
-  _pixels.setPixelColor(DOT1, _pixels.Color(r, g, b));
-  _pixels.setPixelColor(DOT2, _pixels.Color(r, g, b));
+void ClockDisplay::setPixel(uint16_t offset, uint16_t r, uint16_t g, uint16_t b) {
+  _pixels.setPixelColor(offset, r, g, b);
+  _pixels.show();
+}
+
+void ClockDisplay::drawDots(uint16_t r, uint16_t g, uint16_t b, bool update) {
+  _pixels.setPixelColor(DOT1, r, g, b);
+  _pixels.setPixelColor(DOT2, r, g, b);
 
   if (update) {
     _pixels.show();

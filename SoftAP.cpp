@@ -2,9 +2,6 @@
 #include "ClockWebServer.h"
 
 void SoftAP::init() {
-  _display->setBits(MINUTE1, 0, 255, 0, 0b01011111);       // A
-  _display->setBits(MINUTE2, 0, 255, 0, 0b00011111, true); // P
-
   startAp();
 
   /* Setup the DNS server redirecting all the domains to the apIP */
@@ -14,6 +11,10 @@ void SoftAP::init() {
 }
 
 void SoftAP::run() {
+  _display->clear();
+  _display->setBits(MINUTE1, 0, 255, 0, 0b01011111);       // A
+  _display->setBits(MINUTE2, 0, 255, 0, 0b00011111, true); // P
+
   while(1) {
     _dnsServer->processNextRequest();
     yield();

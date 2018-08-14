@@ -185,7 +185,7 @@ void ClockWebServer::index(AsyncWebServerRequest * request) {
   snprintf_P(body, sizeof(body),
            PSTR("<p>Current Date: %04d-%02d-%02d</p>"
            "<p>Current Time: %d:%02d:%02d %s</p>"
-           "<p>Temperature: %.2fF"
+           "<p>Temperature: %.2f F"
            "<p>Uptime: %d:%02d:%02d</p>"),
            now.Year(), now.Month(), now.Day(),
            hours, now.Minute(), now.Second(), now.Hour() < 12 ? "am" : "pm",

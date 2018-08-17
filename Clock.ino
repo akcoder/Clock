@@ -31,6 +31,8 @@ int mins = -1;
 
 #define LED_PIN 12      /* D6 */
 #define HEARTBEAT_PIN 2 /* D4 */
+#define SDA_PIN 4       /* D2 */
+#define SCL_PIN 5       /* D1 */
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 ClockDisplay *display = new ClockDisplay(pixels);
@@ -57,6 +59,7 @@ void time_is_set(void) {
 
 void setup() {
   Serial.begin(115200);
+  Serial.setDebugOutput(true);
   Serial.println();
 
   params = new Parameters();
@@ -71,7 +74,10 @@ void setup() {
   display->test();
 
   // Indicate which step we are on...
-  display->drawDigit(MINUTE2, 255, 255, 0, 1, true);
+  display->setBits(HOUR1, 255, 255, 0, 0b01111000);    // Left half of W
+  display->setBits(HOUR2, 255, 255, 0, 0b01110010);    // Right half of W
+  display->setBits(MINUTE1, 255, 255, 0, 0b00011101);  // F
+  display->turnOffDigit(MINUTE2, true); 
 
   bool wifiStarted = setupWiFi();
   if (!wifiStarted) {
@@ -83,18 +89,24 @@ void setup() {
 
   startWebServerAndShowIp();
 
-  if (wifiStarted) {
-    rtc.Begin();
+  rtc.Begin();
 
-    display->drawDigit(MINUTE2, 255, 255, 0, 2, true);
-    configTime(TZ_SEC, DST_SEC, "pool.ntp.org");
+  display->drawDigit(MINUTE2, 255, 255, 0, 2, true);
+  configTime(TZ_SEC, DST_SEC, "pool.ntp.org");
 
-    display->drawDigit(MINUTE2, 255, 255, 0, 3, true);
-    settimeofday_cb(time_is_set);
-  }
+  display->drawDigit(MINUTE2, 255, 255, 0, 3, true);
+  settimeofday_cb(time_is_set);
 
   //Waiting for RTC to update... Updated in time_is_set callback...
-  display->drawDigit(MINUTE2, 255, 255, 0, 4, true);
+  display->setBits(HOUR1, 255, 255, 0, 0b01111000); // Left half of W
+  display->setBits(HOUR2, 255, 255, 0, 0b01110010); // Right half of W
+  display->setBits(MINUTE1, 255, 255, 0, 0b01100110); // Left half of T
+  display->setBits(MINUTE2, 255, 255, 0, 0b00011100, true); // Right half of T
+
+  //Don't force the display to wait on a time sync at startup if we have a valid time
+  if (rtc.IsDateTimeValid()) {
+    cbtime_set = true;
+  }
 
   pinMode(HEARTBEAT_PIN, OUTPUT);
 }
@@ -133,15 +145,18 @@ bool setupWiFi() {
     return false;
   }
 
-  Serial.printf_P(PSTR("Connecting to '%s'"), params->ssid().c_str());
+  Serial.printf_P(PSTR("Connecting to '%s', '%s'"), params->ssid().c_str(), params->passphrase().c_str());
   WiFi.begin(params->ssid().c_str(), params->passphrase().c_str());
 
   int count = 0;
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
+
+    display->setPixel(DOT1, 0, 0, count % 2? 255 : 0);
     Serial.print(".");
+
     ++count;
-    if (count > 20) {
+    if (count > 30) {
       Serial.println(F("failed!"));
       WiFi.disconnect();
       return false;
@@ -276,7 +291,7 @@ void displayTime(RtcDateTime &rtcNow) {
 
 void showTemp() {
   RtcTemperature temp = rtc.GetTemperature();
-  int f = (int)temp.AsFloatDegF();
+  int f = (int)round(temp.AsFloatDegF());
 
   display->drawNumber(f >= 80 ? 255 : 0, (f < 80 && f >= 60) ? 255 : 0, f < 60 ? 255 : 0, f);
   delay(2000);
